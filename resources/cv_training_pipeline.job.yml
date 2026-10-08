@@ -1,0 +1,134 @@
+# End-to-end CV MLOps pipeline:
+#
+#                 ┌─▶ train_model_a (GPU) ─▶ eval_model_a ─┐
+#  prepare_data ──┤                                        ├─▶ select_best ─┬─▶ batch_inference
+#                 └─▶ train_model_b (GPU) ─▶ eval_model_b ─┘   (@champion)  └─▶ deploy_endpoint
+#
+# Fail-fast design: no retries, tight per-task timeouts, data-quality and sanity-accuracy gates
+# raise before expensive steps, and max_concurrent_runs: 1 prevents two runs racing on @champion.
+resources:
+  jobs:
+    cv_training_pipeline:
+      name: "[${bundle.target}] cv-mlops-training-pipeline"
+      description: Data prep → parallel GPU training of two backbones → evaluation → champion selection → batch + real-time inference
+      max_concurrent_runs: 1
+      timeout_seconds: 10800
+      queue:
+        enabled: true
+      email_notifications:
+        on_failure:
+          - ${var.notification_email}
+      tags:
+        project: cv-mlops-demo
+
+      parameters:
+        - { name: catalog, default: "${var.catalog}" }
+        - { name: schema, default: "${resources.schemas.cv_schema.name}" }
+        - { name: volume, default: "${resources.volumes.raw_images.name}" }
+        - { name: model_name, default: "${var.catalog}.${resources.schemas.cv_schema.name}.${resources.registered_models.image_classifier.name}" }
+        - { name: experiment_path, default: "${resources.experiments.cv_experiment.name}" }
+        - { name: backbones, default: "${var.backbone_a},${var.backbone_b}" }
+        - { name: max_per_class, default: "${var.max_per_class}" }
+        - { name: epochs, default: "${var.epochs}" }
+        - { name: batch_size, default: "64" }
+        - { name: learning_rate, default: "0.001" }
+        - { name: min_val_accuracy, default: "0.3" }
+        - { name: accuracy_tolerance, default: "${var.accuracy_tolerance}" }
+        - { name: score_split, default: "test" }
+        - { name: endpoint_name, default: "${var.endpoint_name}" }
+        - { name: workload_size, default: "Small" }
+        - { name: deploy_timeout_minutes, default: "40" }
+        - { name: job_run_id, default: "{{job.run_id}}" }
+
+      environments:
+        # Serverless CPU: CPU-only torch wheels at the exact versions the GPU AI runtime ships,
+        # so a model trained on GPU loads identically for eval, batch scoring and serving.
+        - environment_key: cpu
+          spec:
+            environment_version: "4"
+            dependencies:
+              - --extra-index-url https://download.pytorch.org/whl/cpu
+              - torch==2.11.0+cpu
+              - torchvision==0.26.0+cpu
+              - mlflow==3.13.0
+              - pillow==12.0.0
+              - matplotlib==3.10.7
+              - databricks-sdk==0.67.0
+        # Serverless GPU (AI Runtime): Databricks AI environment with torch + MLflow preinstalled.
+        - environment_key: gpu
+          spec:
+            base_environment: databricks_ai_v6
+
+      tasks:
+        - task_key: prepare_data
+          environment_key: cpu
+          timeout_seconds: 3600  # first run lands ~13k files in the Volume (~30 min); later runs skip it
+          notebook_task:
+            notebook_path: ../src/notebooks/01_prepare_data.py
+
+        - task_key: train_model_a
+          depends_on: [{ task_key: prepare_data }]
+          environment_key: gpu
+          compute:
+            hardware_accelerator: ${var.gpu_type}
+          timeout_seconds: 3600
+          notebook_task:
+            notebook_path: ../src/notebooks/02_train.py
+            base_parameters:
+              backbone: ${var.backbone_a}
+
+        - task_key: train_model_b
+          depends_on: [{ task_key: prepare_data }]
+          environment_key: gpu
+          compute:
+            hardware_accelerator: ${var.gpu_type}
+          timeout_seconds: 3600
+          notebook_task:
+            notebook_path: ../src/notebooks/02_train.py
+            base_parameters:
+              backbone: ${var.backbone_b}
+
+        - task_key: eval_model_a
+          depends_on: [{ task_key: train_model_a }]
+          environment_key: cpu
+          timeout_seconds: 1800
+          notebook_task:
+            notebook_path: ../src/notebooks/03_evaluate.py
+            base_parameters:
+              model_version: "{{tasks.train_model_a.values.model_version}}"
+
+        - task_key: eval_model_b
+          depends_on: [{ task_key: train_model_b }]
+          environment_key: cpu
+          timeout_seconds: 1800
+          notebook_task:
+            notebook_path: ../src/notebooks/03_evaluate.py
+            base_parameters:
+              model_version: "{{tasks.train_model_b.values.model_version}}"
+
+        - task_key: select_best
+          depends_on: [{ task_key: eval_model_a }, { task_key: eval_model_b }]
+          environment_key: cpu
+          timeout_seconds: 1800
+          notebook_task:
+            notebook_path: ../src/notebooks/04_select_best.py
+            base_parameters:
+              candidate_versions: "{{tasks.eval_model_a.values.model_version}},{{tasks.eval_model_b.values.model_version}}"
+
+        - task_key: batch_inference
+          depends_on: [{ task_key: select_best }]
+          environment_key: cpu
+          timeout_seconds: 1800
+          notebook_task:
+            notebook_path: ../src/notebooks/05_batch_inference.py
+            base_parameters:
+              model_version: "{{tasks.select_best.values.winner_version}}"
+
+        - task_key: deploy_endpoint
+          depends_on: [{ task_key: select_best }]
+          environment_key: cpu
+          timeout_seconds: 3000
+          notebook_task:
+            notebook_path: ../src/notebooks/06_deploy_endpoint.py
+            base_parameters:
+              model_version: "{{tasks.select_best.values.winner_version}}"

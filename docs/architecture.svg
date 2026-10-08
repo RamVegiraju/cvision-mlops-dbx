@@ -1,0 +1,178 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="880" viewBox="0 0 1600 880" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+    <style>
+      .t { font-size: 15px; font-weight: 600; fill: #0f172a; }
+      .s { font-size: 12px; fill: #475569; }
+      .h { font-size: 16px; font-weight: 700; fill: #0f172a; }
+      .hs { font-size: 12px; fill: #64748b; }
+      .lbl { font-size: 11px; fill: #64748b; font-style: italic; }
+      .flow { stroke: #475569; stroke-width: 1.8; fill: none; marker-end: url(#arr); }
+      .io { stroke: #94a3b8; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; marker-end: url(#arrd); }
+      .cpu { fill: #ffffff; stroke: #2563eb; stroke-width: 2; }
+      .gpu { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; }
+      .store { fill: #ffffff; stroke: #7c3aed; stroke-width: 1.6; }
+      .svc { fill: #ffffff; stroke: #0f766e; stroke-width: 2; }
+      .pill { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 1.2; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="880" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="40" y="44" font-size="26" font-weight="700" fill="#0f172a">Computer Vision MLOps on Databricks</text>
+  <text x="40" y="68" font-size="14" fill="#64748b">Image classification · data prep → parallel GPU training → evaluation → selection → batch + real-time inference</text>
+
+  <!-- Deployment / CI bar -->
+  <rect class="pill" x="40" y="88" width="230" height="40" rx="20"/>
+  <text class="t" x="155" y="113" text-anchor="middle" font-size="12.5">GitHub · cvision-mlops-dbx</text>
+  <path class="flow" d="M270,108 H298"/>
+  <rect class="pill" x="300" y="88" width="490" height="40" rx="20"/>
+  <text class="t" x="545" y="113" text-anchor="middle" font-size="12.5">Declarative Automation Bundle · databricks.yml + resources/*.yml</text>
+  <path class="flow" d="M790,108 H818"/>
+  <rect class="pill" x="820" y="88" width="500" height="40" rx="20"/>
+  <text class="t" x="1070" y="113" text-anchor="middle" font-size="12.5">Trigger: bundle run · Run now · Jobs API · schedule / file arrival</text>
+  <path class="flow" d="M545,128 V158"/>
+
+  <!-- Lakeflow Job frame -->
+  <rect x="30" y="160" width="1230" height="420" rx="14" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+  <text class="h" x="52" y="190">Lakeflow Job · cv-mlops-training-pipeline</text>
+  <text class="hs" x="52" y="208">dependencies · parallel branches · job parameters · task values · per-task timeouts</text>
+  <!-- legend -->
+  <rect class="gpu" x="890" y="180" width="18" height="14" rx="3"/>
+  <text class="s" x="914" y="192">Serverless GPU (AI Runtime, A10)</text>
+  <rect class="cpu" x="1120" y="180" width="18" height="14" rx="3"/>
+  <text class="s" x="1144" y="192">Serverless CPU</text>
+
+  <!-- prepare_data -->
+  <rect class="cpu" x="55" y="354" width="190" height="72" rx="10"/>
+  <text class="t" x="70" y="378">prepare_data</text>
+  <text class="s" x="70" y="398">images → Volume → Delta</text>
+  <text class="s" x="70" y="414">data-quality gate</text>
+
+  <!-- train -->
+  <rect class="gpu" x="300" y="254" width="190" height="72" rx="10"/>
+  <text class="t" x="315" y="278">train_model_a</text>
+  <text class="s" x="315" y="298">MobileNetV3-Large</text>
+  <text class="s" x="315" y="314">transfer learning · MLflow</text>
+  <rect class="gpu" x="300" y="454" width="190" height="72" rx="10"/>
+  <text class="t" x="315" y="478">train_model_b</text>
+  <text class="s" x="315" y="498">EfficientNet-B0</text>
+  <text class="s" x="315" y="514">transfer learning · MLflow</text>
+  <text class="lbl" x="395" y="395" text-anchor="middle">in parallel</text>
+
+  <!-- eval -->
+  <rect class="cpu" x="545" y="254" width="190" height="72" rx="10"/>
+  <text class="t" x="560" y="278">eval_model_a</text>
+  <text class="s" x="560" y="298">accuracy · top-3 · F1</text>
+  <text class="s" x="560" y="314">CPU latency p50 / p95</text>
+  <rect class="cpu" x="545" y="454" width="190" height="72" rx="10"/>
+  <text class="t" x="560" y="478">eval_model_b</text>
+  <text class="s" x="560" y="498">accuracy · top-3 · F1</text>
+  <text class="s" x="560" y="514">CPU latency p50 / p95</text>
+  <text class="lbl" x="640" y="395" text-anchor="middle">in parallel</text>
+
+  <!-- select -->
+  <rect class="cpu" x="790" y="354" width="190" height="72" rx="10"/>
+  <text class="t" x="805" y="378">select_best</text>
+  <text class="s" x="805" y="398">best accuracy, then speed</text>
+  <text class="s" x="805" y="414">winner → @champion</text>
+
+  <!-- outputs -->
+  <rect class="cpu" x="1035" y="254" width="190" height="72" rx="10"/>
+  <text class="t" x="1050" y="278">deploy_endpoint</text>
+  <text class="s" x="1050" y="298">create / update endpoint</text>
+  <text class="s" x="1050" y="314">wait ready · smoke query</text>
+  <rect class="cpu" x="1035" y="454" width="190" height="72" rx="10"/>
+  <text class="t" x="1050" y="478">batch_inference</text>
+  <text class="s" x="1050" y="498">chunked scoring from Delta</text>
+  <text class="s" x="1050" y="514">→ gold_predictions</text>
+  <text class="lbl" x="1130" y="395" text-anchor="middle">in parallel</text>
+
+  <!-- task flow -->
+  <path class="flow" d="M245,390 C272,390 272,290 298,290"/>
+  <path class="flow" d="M245,390 C272,390 272,490 298,490"/>
+  <path class="flow" d="M490,290 H543"/>
+  <path class="flow" d="M490,490 H543"/>
+  <path class="flow" d="M735,290 C762,290 762,390 788,390"/>
+  <path class="flow" d="M735,490 C762,490 762,390 788,390"/>
+  <path class="flow" d="M980,390 C1007,390 1007,290 1033,290"/>
+  <path class="flow" d="M980,390 C1007,390 1007,490 1033,490"/>
+
+  <!-- Right column: clients, serving, MLflow -->
+  <rect class="pill" x="1300" y="165" width="270" height="70" rx="10"/>
+  <text class="t" x="1315" y="190">Apps / REST clients</text>
+  <text class="s" x="1315" y="210">POST /serving-endpoints/</text>
+  <text class="s" x="1315" y="225">  cv-image-classifier-dev/invocations</text>
+  <path class="flow" d="M1435,235 V253" style="marker-start: url(#arr)"/>
+
+  <rect class="svc" x="1300" y="255" width="270" height="120" rx="10"/>
+  <text class="t" x="1315" y="280">Model Serving endpoint</text>
+  <text class="s" x="1315" y="300">serves image_classifier@champion</text>
+  <text class="s" x="1315" y="317">CPU · Small · scale-to-zero</text>
+  <text class="s" x="1315" y="334">zero-downtime version updates</text>
+  <text class="s" x="1315" y="351">AI Gateway inference tables on</text>
+  <path class="flow" d="M1225,290 H1298"/>
+
+  <rect class="svc" x="1300" y="440" width="270" height="140" rx="10"/>
+  <text class="t" x="1315" y="465">MLflow Tracking</text>
+  <text class="s" x="1315" y="485">experiment cv_mlops_demo_dev</text>
+  <text class="s" x="1315" y="502">params · per-epoch metrics · lineage</text>
+  <text class="s" x="1315" y="519">confusion matrix · misclassified</text>
+  <text class="s" x="1315" y="536">mlflow.models.evaluate</text>
+  <text class="s" x="1315" y="553">selection decision</text>
+  <path class="io" d="M1260,510 H1298"/>
+  <text class="lbl" x="1279" y="502" text-anchor="middle">log</text>
+
+  <!-- Unity Catalog band -->
+  <rect x="30" y="620" width="1230" height="220" rx="14" fill="#faf5ff" stroke="#7c3aed" stroke-width="1.5"/>
+  <text class="h" x="52" y="650">Unity Catalog · &lt;catalog&gt;.cv_mlops_demo</text>
+  <text class="hs" x="52" y="668">governance · access control · lineage</text>
+
+  <rect class="store" x="50" y="690" width="220" height="120" rx="10"/>
+  <text class="t" x="65" y="714">Volume · raw_images</text>
+  <text class="s" x="65" y="734">Imagenette JPEGs</text>
+  <text class="s" x="65" y="751">pretrained weights cache</text>
+
+  <rect class="store" x="292" y="690" width="220" height="120" rx="10"/>
+  <text class="t" x="307" y="714">Delta tables</text>
+  <text class="s" x="307" y="734">bronze_images (raw bytes)</text>
+  <text class="s" x="307" y="751">silver_image_manifest</text>
+  <text class="s" x="307" y="768">  labels · splits · quality flags</text>
+
+  <rect class="store" x="534" y="690" width="220" height="120" rx="10"/>
+  <text class="t" x="549" y="714">Registered model</text>
+  <text class="s" x="549" y="734">image_classifier v1…n</text>
+  <text class="s" x="549" y="751">@candidate_&lt;backbone&gt;</text>
+  <text class="s" x="549" y="768">@champion → serving + batch</text>
+  <text class="s" x="549" y="785">eval metrics as version tags</text>
+
+  <rect class="store" x="776" y="690" width="220" height="120" rx="10"/>
+  <text class="t" x="791" y="714">gold_predictions</text>
+  <text class="s" x="791" y="734">batch scores per image</text>
+  <text class="s" x="791" y="751">and model version</text>
+
+  <rect class="store" x="1018" y="690" width="220" height="120" rx="10"/>
+  <text class="t" x="1033" y="714">Inference tables</text>
+  <text class="s" x="1033" y="734">cv_endpoint_*</text>
+  <text class="s" x="1033" y="751">endpoint requests / responses</text>
+
+  <!-- data I/O -->
+  <path class="io" d="M110,426 V688"/>
+  <text class="lbl" x="116" y="600">land</text>
+  <path class="io" d="M220,426 V600 H340 V688"/>
+  <text class="lbl" x="280" y="594">bronze → silver</text>
+  <path class="io" d="M395,526 V610 H620 V688"/>
+  <text class="lbl" x="508" y="604">register versions</text>
+  <path class="io" d="M850,426 V600 H680 V688"/>
+  <text class="lbl" x="765" y="594">set @champion</text>
+  <path class="io" d="M1130,526 V600 H940 V688"/>
+  <text class="lbl" x="1035" y="594">write</text>
+  <path class="io" d="M1570,330 H1588 V600 H1282 V750 H1240"/>
+  <text class="lbl" x="1440" y="594" text-anchor="middle">log requests / responses</text>
+</svg>

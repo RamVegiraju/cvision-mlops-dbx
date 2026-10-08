@@ -1,0 +1,29 @@
+# Unity Catalog + MLflow assets owned by this bundle. Everything downstream references these
+# resources (not hard-coded names), so targets stay isolated by schema.
+resources:
+  schemas:
+    cv_schema:
+      catalog_name: ${var.catalog}
+      name: ${var.schema}
+      comment: CV MLOps demo — images, manifests, predictions, registered model, inference tables
+
+  volumes:
+    raw_images:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.cv_schema.name}
+      name: raw_images
+      volume_type: MANAGED
+      comment: Raw Imagenette images + cached pretrained weights (torch_hub/)
+
+  registered_models:
+    image_classifier:
+      catalog_name: ${var.catalog}
+      schema_name: ${resources.schemas.cv_schema.name}
+      name: image_classifier
+      comment: >-
+        Imagenette 10-class classifier (pyfunc: base64 image in → label, confidence, top_k out).
+        Aliases: @champion (selected model: serving + batch), @candidate_<backbone> (latest per backbone).
+
+  experiments:
+    cv_experiment:
+      name: /Users/${workspace.current_user.userName}/cv_mlops_demo_${bundle.target}
