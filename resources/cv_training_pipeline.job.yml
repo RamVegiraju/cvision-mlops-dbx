@@ -4,7 +4,7 @@
 #  prepare_data ──┤                                        ├─▶ select_best ─┬─▶ batch_inference
 #                 └─▶ train_model_b (GPU) ─▶ eval_model_b ─┘   (@champion)  └─▶ deploy_endpoint
 #
-# Fail-fast design: no retries, tight per-task timeouts, data-quality and sanity-accuracy gates
+# Fail-fast design: no retries (incl. serverless auto-optimization retries), per-task timeouts, data-quality and sanity-accuracy gates
 # raise before expensive steps, and max_concurrent_runs: 1 prevents two runs racing on @champion.
 resources:
   jobs:
@@ -63,6 +63,8 @@ resources:
         - task_key: prepare_data
           environment_key: cpu
           timeout_seconds: 3600  # first run lands ~13k files in the Volume (~30 min); later runs skip it
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/01_prepare_data.py
 
@@ -72,6 +74,8 @@ resources:
           compute:
             hardware_accelerator: ${var.gpu_type}
           timeout_seconds: 3600
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/02_train.py
             base_parameters:
@@ -83,6 +87,8 @@ resources:
           compute:
             hardware_accelerator: ${var.gpu_type}
           timeout_seconds: 3600
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/02_train.py
             base_parameters:
@@ -92,6 +98,8 @@ resources:
           depends_on: [{ task_key: train_model_a }]
           environment_key: cpu
           timeout_seconds: 1800
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/03_evaluate.py
             base_parameters:
@@ -101,6 +109,8 @@ resources:
           depends_on: [{ task_key: train_model_b }]
           environment_key: cpu
           timeout_seconds: 1800
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/03_evaluate.py
             base_parameters:
@@ -110,6 +120,8 @@ resources:
           depends_on: [{ task_key: eval_model_a }, { task_key: eval_model_b }]
           environment_key: cpu
           timeout_seconds: 1800
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/04_select_best.py
             base_parameters:
@@ -119,6 +131,8 @@ resources:
           depends_on: [{ task_key: select_best }]
           environment_key: cpu
           timeout_seconds: 1800
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/05_batch_inference.py
             base_parameters:
@@ -128,6 +142,8 @@ resources:
           depends_on: [{ task_key: select_best }]
           environment_key: cpu
           timeout_seconds: 3000
+          max_retries: 0
+          disable_auto_optimization: true  # no hidden serverless retries: fail fast, fix, repair-run
           notebook_task:
             notebook_path: ../src/notebooks/06_deploy_endpoint.py
             base_parameters:
